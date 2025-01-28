@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Commit Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+    <div class="container">
+        <h1>
+            <svg class="git-icon" viewBox="0 0 16 16">
+                <path d="M15.698 7.287L8.712.302a1.03 1.03 0 00-1.457 0l-1.45 1.45 1.84 1.84a1.223 1.223 0 011.55 1.56l1.773 1.774a1.224 1.224 0 011.267 2.025 1.226 1.226 0 01-2.002-1.334L8.58 5.963v4.353a1.226 1.226 0 10-1.008-.036V5.887a1.226 1.226 0 01-.666-1.608L5.093 2.465l-4.79 4.79a1.03 1.03 0 000 1.457l6.986 6.986a1.03 1.03 0 001.457 0l6.953-6.953a1.031 1.031 0 000-1.457"></path>
+            </svg>
+            Git Commit Viewer
+        </h1>
+    </div>
+</header>
+
+<div class="container">
+    <div class="instructions">
+        <h3>How to use:</h3>
+        <p>1. Generate a commit log file from your Git repository:</p>
+        <pre>git log --pretty=format:'%H|%an|%ae|%ad|%s' --date=iso > commits.txt</pre>
+        <p>2. Upload the generated file using the button below</p>
+        <p>3. Use filters and search to explore your commit history</p>
+    </div>
+
+    <div class="controls">
+        <input type="file" id="fileInput" accept=".txt,.log">
+        <label for="searchInput"></label><input type="text" id="searchInput" placeholder="Search commits...">
+        <label for="authorFilter"></label><select id="authorFilter">
+            <option value="">All Authors</option>
+        </select>
+        <label for="dateFilter"></label><select id="dateFilter">
+            <option value="">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+        </select>
+    </div>
+
+    <div class="stats" id="stats" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-value" id="totalCommits">0</div>
+            <div class="stat-label">Total Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalAuthors">0</div>
+            <div class="stat-label">Contributors</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="dateRange">-</div>
+            <div class="stat-label">Date Range</div>
+        </div>
+    </div>
+
+    <div id="error" class="error" style="display: none;"></div>
+
+    <div class="commits-list" id="commitsList">
+        <div class="empty-state">
+            <h2>No commits loaded</h2>
+            <p>Upload a commit log file to get started</p>
+        </div>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
