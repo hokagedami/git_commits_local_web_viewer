@@ -21,25 +21,48 @@
 <div class="container">
     <div class="instructions">
         <h3>How to use:</h3>
-        <p>1. Generate a commit log file from your Git repository:</p>
-        <pre>git log --pretty=format:'%H|%an|%ae|%ad|%s' --date=iso > commits.txt</pre>
+        <p>1. Generate a comprehensive commit log file from your Git repository:</p>
+        <div class="command-options">
+            <div class="command-option">
+                <h4>Basic commits:</h4>
+                <pre>git log --pretty=format:'%H|%an|%ae|%ad|%s|%D' --date=iso --all > commits.txt</pre>
+            </div>
+            <div class="command-option">
+                <h4>With file statistics:</h4>
+                <pre>git log --pretty=format:'%H|%an|%ae|%ad|%s|%D' --date=iso --all --numstat > commits-detailed.txt</pre>
+            </div>
+            <div class="command-option">
+                <h4>With full diff (large files):</h4>
+                <pre>git log --pretty=format:'%H|%an|%ae|%ad|%s|%D' --date=iso --all -p > commits-full.txt</pre>
+            </div>
+        </div>
         <p>2. Upload the generated file using the button below</p>
-        <p>3. Use filters and search to explore your commit history</p>
+        <p>3. Use filters, search, and visualizations to explore your commit history</p>
     </div>
 
     <div class="controls">
         <input type="file" id="fileInput" accept=".txt,.log">
-        <label for="searchInput"></label><input type="text" id="searchInput" placeholder="Search commits...">
-        <label for="authorFilter"></label><select id="authorFilter">
+        <input type="text" id="searchInput" placeholder="Search commits...">
+        <select id="authorFilter">
             <option value="">All Authors</option>
         </select>
-        <label for="dateFilter"></label><select id="dateFilter">
+        <select id="branchFilter">
+            <option value="">All Branches</option>
+        </select>
+        <select id="dateFilter">
             <option value="">All Time</option>
             <option value="today">Today</option>
             <option value="week">This Week</option>
             <option value="month">This Month</option>
             <option value="year">This Year</option>
         </select>
+    </div>
+    
+    <div class="view-controls">
+        <button id="listViewBtn" class="view-btn active">List View</button>
+        <button id="graphViewBtn" class="view-btn">Graph View</button>
+        <button id="heatmapViewBtn" class="view-btn">Activity Heatmap</button>
+        <button id="chartsViewBtn" class="view-btn">Frequency Charts</button>
     </div>
 
     <div class="stats" id="stats" style="display: none;">
@@ -52,6 +75,14 @@
             <div class="stat-label">Contributors</div>
         </div>
         <div class="stat-card">
+            <div class="stat-value" id="totalBranches">0</div>
+            <div class="stat-label">Branches</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalFiles">0</div>
+            <div class="stat-label">Files Changed</div>
+        </div>
+        <div class="stat-card">
             <div class="stat-value" id="dateRange">-</div>
             <div class="stat-label">Date Range</div>
         </div>
@@ -59,14 +90,38 @@
 
     <div id="error" class="error" style="display: none;"></div>
 
-    <div class="commits-list" id="commitsList">
-        <div class="empty-state">
-            <h2>No commits loaded</h2>
-            <p>Upload a commit log file to get started</p>
+    <div class="main-content">
+        <div class="commits-list" id="commitsList">
+            <div class="empty-state">
+                <h2>No commits loaded</h2>
+                <p>Upload a commit log file to get started</p>
+            </div>
+        </div>
+        
+        <div class="commit-graph" id="commitGraph" style="display: none;">
+            <div class="graph-container" id="graphContainer"></div>
+        </div>
+        
+        <div class="activity-heatmap" id="activityHeatmap" style="display: none;">
+            <div class="heatmap-container" id="heatmapContainer"></div>
+        </div>
+        
+        <div class="frequency-charts" id="frequencyCharts" style="display: none;">
+            <div class="charts-container" id="chartsContainer"></div>
         </div>
     </div>
 
     <div class="pagination" id="pagination"></div>
+    
+    <div class="commit-modal" id="commitModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Commit Details</h3>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
 </div>
 
 <script src="script.js"></script>
