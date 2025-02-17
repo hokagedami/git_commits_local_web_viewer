@@ -11,6 +11,7 @@ let colorIndex = 0;
 // DOM Elements
 const fileInput = document.getElementById('fileInput');
 const searchInput = document.getElementById('searchInput');
+const regexToggle = document.getElementById('regexToggle');
 const authorFilter = document.getElementById('authorFilter');
 const branchFilter = document.getElementById('branchFilter');
 const dateFilter = document.getElementById('dateFilter');
@@ -40,6 +41,7 @@ const branchColorPalette = [
 // Event Listeners
 fileInput.addEventListener('change', handleFileUpload);
 searchInput.addEventListener('input', filterCommits);
+regexToggle.addEventListener('change', filterCommits);
 authorFilter.addEventListener('change', filterCommits);
 branchFilter.addEventListener('change', filterCommits);
 dateFilter.addEventListener('change', filterCommits);
@@ -241,19 +243,45 @@ function populateFilters() {
 }
 
 function filterCommits() {
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = searchInput.value;
+    const isRegexEnabled = regexToggle.checked;
     const selectedAuthor = authorFilter.value;
     const selectedBranch = branchFilter.value;
     const selectedDateFilter = dateFilter.value;
     const now = new Date();
 
+    // Clear any previous regex error
+    clearRegexError();
+
     filteredCommits = allCommits.filter(commit => {
         // Search filter
         if (searchTerm) {
-            const matchesSearch =
-                commit.message.toLowerCase().includes(searchTerm) ||
-                commit.hash.toLowerCase().includes(searchTerm) ||
-                commit.author.toLowerCase().includes(searchTerm);
+            let matchesSearch = false;
+            
+            if (isRegexEnabled) {
+                try {
+                    const regex = new RegExp(searchTerm, 'i');
+                    matchesSearch = 
+                        regex.test(commit.message) ||
+                        regex.test(commit.hash) ||
+                        regex.test(commit.author);
+                } catch (error) {
+                    // Invalid regex - show error and fall back to normal search
+                    showRegexError('Invalid regex pattern: ' + error.message);
+                    const lowerSearchTerm = searchTerm.toLowerCase();
+                    matchesSearch =
+                        commit.message.toLowerCase().includes(lowerSearchTerm) ||
+                        commit.hash.toLowerCase().includes(lowerSearchTerm) ||
+                        commit.author.toLowerCase().includes(lowerSearchTerm);
+                }
+            } else {
+                const lowerSearchTerm = searchTerm.toLowerCase();
+                matchesSearch =
+                    commit.message.toLowerCase().includes(lowerSearchTerm) ||
+                    commit.hash.toLowerCase().includes(lowerSearchTerm) ||
+                    commit.author.toLowerCase().includes(lowerSearchTerm);
+            }
+            
             if (!matchesSearch) return false;
         }
 
@@ -771,5 +799,25 @@ function showError(message) {
         error.style.display = 'block';
     } else {
         error.style.display = 'none';
+    }
+}
+
+// Regex error handling functions
+function showRegexError(message) {
+    clearRegexError();
+    
+    const searchContainer = document.querySelector('.search-container');
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'regex-error';
+    errorDiv.textContent = message;
+    errorDiv.id = 'regexError';
+    
+    searchContainer.appendChild(errorDiv);
+}
+
+function clearRegexError() {
+    const existingError = document.getElementById('regexError');
+    if (existingError) {
+        existingError.remove();
     }
 }
