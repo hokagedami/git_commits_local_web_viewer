@@ -12,7 +12,11 @@ let colorIndex = 0;
 const fileInput = document.getElementById('fileInput');
 const searchInput = document.getElementById('searchInput');
 const regexToggle = document.getElementById('regexToggle');
-const authorFilter = document.getElementById('authorFilter');
+const authorFilterInput = document.getElementById('authorFilterInput');
+const authorDropdown = document.getElementById('authorDropdown');
+const authorOptions = document.getElementById('authorOptions');
+const selectAllAuthors = document.getElementById('selectAllAuthors');
+const authorCount = document.getElementById('authorCount');
 const branchFilter = document.getElementById('branchFilter');
 const dateFilter = document.getElementById('dateFilter');
 const commitsList = document.getElementById('commitsList');
@@ -38,13 +42,24 @@ const branchColorPalette = [
     '#84cc16', '#6366f1', '#22c55e', '#f43f5e', '#a855f7'
 ];
 
+// Global variables for multi-select
+let selectedAuthors = new Set();
+
 // Event Listeners
 fileInput.addEventListener('change', handleFileUpload);
 searchInput.addEventListener('input', filterCommits);
 regexToggle.addEventListener('change', filterCommits);
-authorFilter.addEventListener('change', filterCommits);
+authorFilterInput.addEventListener('click', toggleAuthorDropdown);
+selectAllAuthors.addEventListener('change', handleSelectAllAuthors);
 branchFilter.addEventListener('change', filterCommits);
 dateFilter.addEventListener('change', filterCommits);
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.multi-select-container')) {
+        closeAuthorDropdown();
+    }
+});
 
 listViewBtn.addEventListener('click', () => switchView('list'));
 graphViewBtn.addEventListener('click', () => switchView('graph'));
@@ -219,15 +234,31 @@ function updateStats() {
 }
 
 function populateFilters() {
-    // Author filter
+    // Author multi-select filter
     const authors = [...new Set(allCommits.map(c => c.author))].sort();
-    authorFilter.innerHTML = '<option value="">All Authors</option>';
+    selectedAuthors.clear();
+    authors.forEach(author => selectedAuthors.add(author));
+    
+    authorOptions.innerHTML = '';
     authors.forEach(author => {
-        const option = document.createElement('option');
-        option.value = author;
-        option.textContent = author;
-        authorFilter.appendChild(option);
+        const label = document.createElement('label');
+        label.className = 'multi-select-option';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = author;
+        checkbox.checked = true;
+        checkbox.addEventListener('change', handleAuthorSelection);
+        
+        const span = document.createElement('span');
+        span.textContent = author;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        authorOptions.appendChild(label);
     });
+    
+    updateAuthorDisplay();
     
     // Branch filter
     const branches = new Set();
@@ -245,7 +276,6 @@ function populateFilters() {
 function filterCommits() {
     const searchTerm = searchInput.value;
     const isRegexEnabled = regexToggle.checked;
-    const selectedAuthor = authorFilter.value;
     const selectedBranch = branchFilter.value;
     const selectedDateFilter = dateFilter.value;
     const now = new Date();
@@ -285,8 +315,8 @@ function filterCommits() {
             if (!matchesSearch) return false;
         }
 
-        // Author filter
-        if (selectedAuthor && commit.author !== selectedAuthor) {
+        // Author filter (multiple selection)
+        if (selectedAuthors.size > 0 && !selectedAuthors.has(commit.author)) {
             return false;
         }
         
@@ -819,5 +849,80 @@ function clearRegexError() {
     const existingError = document.getElementById('regexError');
     if (existingError) {
         existingError.remove();
+    }
+}
+
+// Multi-select author filter functions
+function toggleAuthorDropdown() {
+    const isOpen = authorDropdown.style.display === 'block';
+    if (isOpen) {
+        closeAuthorDropdown();
+    } else {
+        openAuthorDropdown();
+    }
+}
+
+function openAuthorDropdown() {
+    authorDropdown.style.display = 'block';
+    authorFilterInput.classList.add('open');
+}
+
+function closeAuthorDropdown() {
+    authorDropdown.style.display = 'none';
+    authorFilterInput.classList.remove('open');
+}
+
+function handleAuthorSelection(event) {
+    const author = event.target.value;
+    const isChecked = event.target.checked;
+    
+    if (isChecked) {
+        selectedAuthors.add(author);
+    } else {
+        selectedAuthors.delete(author);
+    }
+    
+    updateSelectAllState();
+    updateAuthorDisplay();
+    filterCommits();
+}
+
+function handleSelectAllAuthors(event) {
+    const isChecked = event.target.checked;
+    const checkboxes = authorOptions.querySelectorAll('input[type="checkbox"]');
+    
+    selectedAuthors.clear();
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+        if (isChecked) {
+            selectedAuthors.add(checkbox.value);
+        }
+    });
+    
+    updateAuthorDisplay();
+    filterCommits();
+}
+
+function updateSelectAllState() {
+    const checkboxes = authorOptions.querySelectorAll('input[type="checkbox"]');
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    
+    selectAllAuthors.checked = checkedCount === checkboxes.length;
+    selectAllAuthors.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+}
+
+function updateAuthorDisplay() {
+    const totalAuthors = allCommits ? [...new Set(allCommits.map(c => c.author))].length : 0;
+    const selectedCount = selectedAuthors.size;
+    
+    if (selectedCount === 0 || selectedCount === totalAuthors) {
+        document.querySelector('.placeholder').style.display = 'block';
+        authorCount.style.display = 'none';
+        document.querySelector('.placeholder').textContent = 'All Authors';
+    } else {
+        document.querySelector('.placeholder').style.display = 'none';
+        authorCount.style.display = 'block';
+        authorCount.textContent = `${selectedCount} selected`;
     }
 }

@@ -375,6 +375,115 @@ button:disabled {
     margin-top: 2px;
 }
 
+/* Multi-select dropdown styling */
+.multi-select-container {
+    position: relative;
+    min-width: 150px;
+}
+
+.multi-select-input {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 32px 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 20px;
+    transition: border-color 0.2s;
+}
+
+.multi-select-input:hover {
+    border-color: #58a6ff;
+}
+
+.multi-select-input.open {
+    border-color: #58a6ff;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.dropdown-arrow {
+    position: absolute;
+    right: 12px;
+    font-size: 10px;
+    color: #8b949e;
+    transition: transform 0.2s;
+}
+
+.multi-select-input.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.placeholder {
+    color: #8b949e;
+    flex: 1;
+}
+
+.selected-count {
+    background: #58a6ff;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.multi-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #0d1117;
+    border: 1px solid #58a6ff;
+    border-top: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.select-all-container {
+    border-bottom: 1px solid #30363d;
+    background: #161b22;
+}
+
+.multi-select-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.multi-select-option:hover {
+    background: #21262d;
+}
+
+.multi-select-option input[type="checkbox"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    accent-color: #58a6ff;
+}
+
+.multi-select-option span {
+    flex: 1;
+    color: #c9d1d9;
+}
+
+.select-all-container .multi-select-option span {
+    font-weight: 500;
+    color: #58a6ff;
+}
+
 /* Branch visualization */
 .branch-indicator {
     display: inline-block;

@@ -50,9 +50,24 @@
                 <span class="toggle-label">Regex</span>
             </label>
         </div>
-        <select id="authorFilter">
-            <option value="">All Authors</option>
-        </select>
+        <div class="multi-select-container">
+            <div class="multi-select-input" id="authorFilterInput">
+                <span class="placeholder">All Authors</span>
+                <span class="selected-count" id="authorCount" style="display: none;"></span>
+                <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="multi-select-dropdown" id="authorDropdown" style="display: none;">
+                <div class="select-all-container">
+                    <label class="multi-select-option">
+                        <input type="checkbox" id="selectAllAuthors" checked>
+                        <span>Select All</span>
+                    </label>
+                </div>
+                <div class="multi-select-options" id="authorOptions">
+                    <!-- Author options will be populated dynamically -->
+                </div>
+            </div>
+        </div>
         <select id="branchFilter">
             <option value="">All Branches</option>
         </select>
