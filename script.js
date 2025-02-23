@@ -19,6 +19,11 @@ const selectAllAuthors = document.getElementById('selectAllAuthors');
 const authorCount = document.getElementById('authorCount');
 const branchFilter = document.getElementById('branchFilter');
 const dateFilter = document.getElementById('dateFilter');
+const dateRangePicker = document.getElementById('dateRangePicker');
+const startDate = document.getElementById('startDate');
+const endDate = document.getElementById('endDate');
+const clearDateRange = document.getElementById('clearDateRange');
+const applyDateRange = document.getElementById('applyDateRange');
 const commitsList = document.getElementById('commitsList');
 const commitGraph = document.getElementById('commitGraph');
 const activityHeatmap = document.getElementById('activityHeatmap');
@@ -42,8 +47,9 @@ const branchColorPalette = [
     '#84cc16', '#6366f1', '#22c55e', '#f43f5e', '#a855f7'
 ];
 
-// Global variables for multi-select
+// Global variables for multi-select and date range
 let selectedAuthors = new Set();
+let customDateRange = { start: null, end: null };
 
 // Event Listeners
 fileInput.addEventListener('change', handleFileUpload);
@@ -52,12 +58,19 @@ regexToggle.addEventListener('change', filterCommits);
 authorFilterInput.addEventListener('click', toggleAuthorDropdown);
 selectAllAuthors.addEventListener('change', handleSelectAllAuthors);
 branchFilter.addEventListener('change', filterCommits);
-dateFilter.addEventListener('change', filterCommits);
+dateFilter.addEventListener('change', handleDateFilterChange);
+clearDateRange.addEventListener('click', handleClearDateRange);
+applyDateRange.addEventListener('click', handleApplyDateRange);
+startDate.addEventListener('change', validateDateRange);
+endDate.addEventListener('change', validateDateRange);
 
-// Close dropdown when clicking outside
+// Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.multi-select-container')) {
         closeAuthorDropdown();
+    }
+    if (!e.target.closest('.date-filter-container')) {
+        closeDateRangePicker();
     }
 });
 
@@ -343,6 +356,10 @@ function filterCommits() {
                 case 'year':
                     const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
                     if (commitDate < yearAgo) return false;
+                    break;
+                case 'custom':
+                    if (customDateRange.start && commitDate < customDateRange.start) return false;
+                    if (customDateRange.end && commitDate > customDateRange.end) return false;
                     break;
             }
         }
@@ -924,5 +941,107 @@ function updateAuthorDisplay() {
         document.querySelector('.placeholder').style.display = 'none';
         authorCount.style.display = 'block';
         authorCount.textContent = `${selectedCount} selected`;
+    }
+}
+
+// Date range picker functions
+function handleDateFilterChange() {
+    const selectedValue = dateFilter.value;
+    
+    if (selectedValue === 'custom') {
+        showDateRangePicker();
+    } else {
+        closeDateRangePicker();
+        filterCommits();
+    }
+}
+
+function showDateRangePicker() {
+    dateRangePicker.style.display = 'block';
+    
+    // Set default values if not already set
+    if (!startDate.value && !endDate.value && allCommits.length > 0) {
+        const dates = allCommits.map(c => c.date).sort((a, b) => a - b);
+        const minDate = dates[0];
+        const maxDate = dates[dates.length - 1];
+        
+        startDate.value = minDate.toISOString().split('T')[0];
+        endDate.value = maxDate.toISOString().split('T')[0];
+    }
+    
+    validateDateRange();
+}
+
+function closeDateRangePicker() {
+    dateRangePicker.style.display = 'none';
+}
+
+function handleClearDateRange() {
+    startDate.value = '';
+    endDate.value = '';
+    customDateRange = { start: null, end: null };
+    dateFilter.value = '';
+    closeDateRangePicker();
+    filterCommits();
+}
+
+function handleApplyDateRange() {
+    const startValue = startDate.value;
+    const endValue = endDate.value;
+    
+    if (!startValue && !endValue) {
+        handleClearDateRange();
+        return;
+    }
+    
+    customDateRange.start = startValue ? new Date(startValue + 'T00:00:00') : null;
+    customDateRange.end = endValue ? new Date(endValue + 'T23:59:59') : null;
+    
+    // Validate range
+    if (customDateRange.start && customDateRange.end && customDateRange.start > customDateRange.end) {
+        alert('Start date must be before end date');
+        return;
+    }
+    
+    closeDateRangePicker();
+    updateDateRangeDisplay();
+    filterCommits();
+}
+
+function validateDateRange() {
+    const startValue = startDate.value;
+    const endValue = endDate.value;
+    const applyBtn = applyDateRange;
+    
+    let isValid = true;
+    
+    if (startValue && endValue) {
+        const start = new Date(startValue);
+        const end = new Date(endValue);
+        isValid = start <= end;
+    }
+    
+    applyBtn.disabled = !isValid;
+    
+    // Update input styling
+    if (startValue && endValue && !isValid) {
+        startDate.style.borderColor = '#da3633';
+        endDate.style.borderColor = '#da3633';
+    } else {
+        startDate.style.borderColor = '#30363d';
+        endDate.style.borderColor = '#30363d';
+    }
+}
+
+function updateDateRangeDisplay() {
+    const selectElement = dateFilter;
+    const customOption = selectElement.querySelector('option[value="custom"]');
+    
+    if (customDateRange.start || customDateRange.end) {
+        const startStr = customDateRange.start ? customDateRange.start.toLocaleDateString() : 'Beginning';
+        const endStr = customDateRange.end ? customDateRange.end.toLocaleDateString() : 'End';
+        customOption.textContent = `Custom Range (${startStr} - ${endStr})`;
+    } else {
+        customOption.textContent = 'Custom Range';
     }
 }
