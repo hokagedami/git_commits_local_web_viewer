@@ -591,6 +591,104 @@ button:disabled {
     font-weight: 500;
 }
 
+/* File path filter styling */
+.file-filter-container {
+    position: relative;
+    min-width: 200px;
+}
+
+.file-filter-container input[type="text"] {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+}
+
+.file-filter-container input[type="text"]:focus {
+    outline: none;
+    border-color: #58a6ff;
+}
+
+.file-filter-container input[type="text"].has-results {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+}
+
+.file-filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #0d1117;
+    border: 1px solid #58a6ff;
+    border-top: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.file-filter-options {
+    padding: 0;
+}
+
+.file-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    color: #c9d1d9;
+    border-bottom: 1px solid #30363d;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.file-option:hover {
+    background: #21262d;
+}
+
+.file-option:last-child {
+    border-bottom: none;
+}
+
+.file-path {
+    flex: 1;
+    word-break: break-all;
+}
+
+.file-count {
+    color: #8b949e;
+    font-size: 10px;
+    margin-left: 8px;
+    background: #21262d;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+.file-match-highlight {
+    background: #ffd33d;
+    color: #000;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+.no-file-results {
+    padding: 12px;
+    text-align: center;
+    color: #8b949e;
+    font-size: 12px;
+    font-style: italic;
+}
+
 /* Branch visualization */
 .branch-indicator {
     display: inline-block;

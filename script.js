@@ -24,6 +24,9 @@ const startDate = document.getElementById('startDate');
 const endDate = document.getElementById('endDate');
 const clearDateRange = document.getElementById('clearDateRange');
 const applyDateRange = document.getElementById('applyDateRange');
+const filePathFilter = document.getElementById('filePathFilter');
+const fileFilterDropdown = document.getElementById('fileFilterDropdown');
+const fileFilterOptions = document.getElementById('fileFilterOptions');
 const commitsList = document.getElementById('commitsList');
 const commitGraph = document.getElementById('commitGraph');
 const activityHeatmap = document.getElementById('activityHeatmap');
@@ -47,9 +50,11 @@ const branchColorPalette = [
     '#84cc16', '#6366f1', '#22c55e', '#f43f5e', '#a855f7'
 ];
 
-// Global variables for multi-select and date range
+// Global variables for multi-select, date range, and file filtering
 let selectedAuthors = new Set();
 let customDateRange = { start: null, end: null };
+let selectedFilePath = '';
+let allFilePaths = new Set();
 
 // Event Listeners
 fileInput.addEventListener('change', handleFileUpload);
@@ -63,6 +68,9 @@ clearDateRange.addEventListener('click', handleClearDateRange);
 applyDateRange.addEventListener('click', handleApplyDateRange);
 startDate.addEventListener('change', validateDateRange);
 endDate.addEventListener('change', validateDateRange);
+filePathFilter.addEventListener('input', handleFilePathInput);
+filePathFilter.addEventListener('focus', showFilePathDropdown);
+filePathFilter.addEventListener('blur', () => setTimeout(hideFilePathDropdown, 200));
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
@@ -71,6 +79,9 @@ document.addEventListener('click', (e) => {
     }
     if (!e.target.closest('.date-filter-container')) {
         closeDateRangePicker();
+    }
+    if (!e.target.closest('.file-filter-container')) {
+        hideFilePathDropdown();
     }
 });
 
@@ -165,6 +176,14 @@ function parseCommits(content) {
         currentCommit.diff = diffContent.join('\n');
         allCommits.push(currentCommit);
     }
+
+    // Collect all file paths
+    allFilePaths.clear();
+    allCommits.forEach(commit => {
+        Object.keys(commit.fileStats).forEach(filePath => {
+            allFilePaths.add(filePath);
+        });
+    });
 
     assignBranchColors();
     updateStats();
@@ -336,6 +355,15 @@ function filterCommits() {
         // Branch filter
         if (selectedBranch && !commit.branches.includes(selectedBranch)) {
             return false;
+        }
+        
+        // File path filter
+        if (selectedFilePath) {
+            const commitFiles = Object.keys(commit.fileStats);
+            const matchesFile = commitFiles.some(filePath => 
+                filePath.toLowerCase().includes(selectedFilePath.toLowerCase())
+            );
+            if (!matchesFile) return false;
         }
 
         // Date filter
@@ -1044,4 +1072,90 @@ function updateDateRangeDisplay() {
     } else {
         customOption.textContent = 'Custom Range';
     }
+}
+
+// File path filtering functions
+function handleFilePathInput() {
+    const inputValue = filePathFilter.value.trim();
+    selectedFilePath = inputValue;
+    
+    if (inputValue) {
+        showFilePathSuggestions(inputValue);
+        filePathFilter.classList.add('has-results');
+    } else {
+        hideFilePathDropdown();
+        filePathFilter.classList.remove('has-results');
+    }
+    
+    filterCommits();
+}
+
+function showFilePathDropdown() {
+    if (filePathFilter.value.trim()) {
+        showFilePathSuggestions(filePathFilter.value.trim());
+    }
+}
+
+function hideFilePathDropdown() {
+    fileFilterDropdown.style.display = 'none';
+    filePathFilter.classList.remove('has-results');
+}
+
+function showFilePathSuggestions(query) {
+    const matchingFiles = Array.from(allFilePaths)
+        .filter(filePath => filePath.toLowerCase().includes(query.toLowerCase()))
+        .sort()
+        .slice(0, 20); // Limit to 20 suggestions
+    
+    if (matchingFiles.length === 0) {
+        fileFilterOptions.innerHTML = '<div class="no-file-results">No matching files found</div>';
+    } else {
+        // Count commits for each file
+        const fileCounts = {};
+        allCommits.forEach(commit => {
+            Object.keys(commit.fileStats).forEach(filePath => {
+                if (matchingFiles.includes(filePath)) {
+                    fileCounts[filePath] = (fileCounts[filePath] || 0) + 1;
+                }
+            });
+        });
+        
+        fileFilterOptions.innerHTML = matchingFiles.map(filePath => {
+            const highlightedPath = highlightFileMatch(filePath, query);
+            const count = fileCounts[filePath] || 0;
+            
+            return `
+                <div class="file-option" data-file-path="${escapeHtml(filePath)}">
+                    <span class="file-path">${highlightedPath}</span>
+                    <span class="file-count">${count}</span>
+                </div>
+            `;
+        }).join('');
+        
+        // Add click handlers
+        fileFilterOptions.querySelectorAll('.file-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const filePath = option.dataset.filePath;
+                filePathFilter.value = filePath;
+                selectedFilePath = filePath;
+                hideFilePathDropdown();
+                filterCommits();
+            });
+        });
+    }
+    
+    fileFilterDropdown.style.display = 'block';
+}
+
+function highlightFileMatch(filePath, query) {
+    if (!query) return escapeHtml(filePath);
+    
+    const escapedPath = escapeHtml(filePath);
+    const queryRegex = new RegExp(`(${escapeRegexChars(query)})`, 'gi');
+    
+    return escapedPath.replace(queryRegex, '<span class="file-match-highlight">$1</span>');
+}
+
+function escapeRegexChars(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

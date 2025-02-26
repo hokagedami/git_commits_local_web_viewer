@@ -71,6 +71,14 @@
         <select id="branchFilter">
             <option value="">All Branches</option>
         </select>
+        <div class="file-filter-container">
+            <input type="text" id="filePathFilter" placeholder="Filter by file path...">
+            <div class="file-filter-dropdown" id="fileFilterDropdown" style="display: none;">
+                <div class="file-filter-options" id="fileFilterOptions">
+                    <!-- File options will be populated dynamically -->
+                </div>
+            </div>
+        </div>
         <div class="date-filter-container">
             <select id="dateFilter">
                 <option value="">All Time</option>
