@@ -27,6 +27,12 @@ const applyDateRange = document.getElementById('applyDateRange');
 const filePathFilter = document.getElementById('filePathFilter');
 const fileFilterDropdown = document.getElementById('fileFilterDropdown');
 const fileFilterOptions = document.getElementById('fileFilterOptions');
+const messageLengthFilter = document.getElementById('messageLengthFilter');
+const lengthRangePicker = document.getElementById('lengthRangePicker');
+const minLength = document.getElementById('minLength');
+const maxLength = document.getElementById('maxLength');
+const clearLengthRange = document.getElementById('clearLengthRange');
+const applyLengthRange = document.getElementById('applyLengthRange');
 const commitsList = document.getElementById('commitsList');
 const commitGraph = document.getElementById('commitGraph');
 const activityHeatmap = document.getElementById('activityHeatmap');
@@ -50,11 +56,12 @@ const branchColorPalette = [
     '#84cc16', '#6366f1', '#22c55e', '#f43f5e', '#a855f7'
 ];
 
-// Global variables for multi-select, date range, and file filtering
+// Global variables for multi-select, date range, file filtering, and message length
 let selectedAuthors = new Set();
 let customDateRange = { start: null, end: null };
 let selectedFilePath = '';
 let allFilePaths = new Set();
+let customLengthRange = { min: null, max: null };
 
 // Event Listeners
 fileInput.addEventListener('change', handleFileUpload);
@@ -71,6 +78,11 @@ endDate.addEventListener('change', validateDateRange);
 filePathFilter.addEventListener('input', handleFilePathInput);
 filePathFilter.addEventListener('focus', showFilePathDropdown);
 filePathFilter.addEventListener('blur', () => setTimeout(hideFilePathDropdown, 200));
+messageLengthFilter.addEventListener('change', handleMessageLengthFilterChange);
+clearLengthRange.addEventListener('click', handleClearLengthRange);
+applyLengthRange.addEventListener('click', handleApplyLengthRange);
+minLength.addEventListener('change', validateLengthRange);
+maxLength.addEventListener('change', validateLengthRange);
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
@@ -82,6 +94,9 @@ document.addEventListener('click', (e) => {
     }
     if (!e.target.closest('.file-filter-container')) {
         hideFilePathDropdown();
+    }
+    if (!e.target.closest('.message-length-container')) {
+        closeLengthRangePicker();
     }
 });
 
@@ -388,6 +403,30 @@ function filterCommits() {
                 case 'custom':
                     if (customDateRange.start && commitDate < customDateRange.start) return false;
                     if (customDateRange.end && commitDate > customDateRange.end) return false;
+                    break;
+            }
+        }
+
+        // Message length filter
+        const selectedLengthFilter = messageLengthFilter.value;
+        if (selectedLengthFilter) {
+            const messageLength = commit.message.length;
+            switch (selectedLengthFilter) {
+                case 'short':
+                    if (messageLength > 50) return false;
+                    break;
+                case 'medium':
+                    if (messageLength <= 50 || messageLength > 100) return false;
+                    break;
+                case 'long':
+                    if (messageLength <= 100 || messageLength > 200) return false;
+                    break;
+                case 'very-long':
+                    if (messageLength <= 200) return false;
+                    break;
+                case 'custom':
+                    if (customLengthRange.min !== null && messageLength < customLengthRange.min) return false;
+                    if (customLengthRange.max !== null && messageLength > customLengthRange.max) return false;
                     break;
             }
         }
@@ -1158,4 +1197,97 @@ function highlightFileMatch(filePath, query) {
 
 function escapeRegexChars(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Message length filter handlers
+function handleMessageLengthFilterChange() {
+    const selectedValue = messageLengthFilter.value;
+    
+    if (selectedValue === 'custom') {
+        showLengthRangePicker();
+    } else {
+        closeLengthRangePicker();
+        filterCommits();
+    }
+}
+
+function showLengthRangePicker() {
+    lengthRangePicker.style.display = 'block';
+    
+    // Set default values if not already set
+    if (!minLength.value && !maxLength.value && allCommits.length > 0) {
+        const lengths = allCommits.map(c => c.message.length).sort((a, b) => a - b);
+        const minLen = lengths[0];
+        const maxLen = lengths[lengths.length - 1];
+        
+        minLength.value = minLen;
+        maxLength.value = maxLen;
+    }
+    
+    validateLengthRange();
+}
+
+function closeLengthRangePicker() {
+    lengthRangePicker.style.display = 'none';
+}
+
+function handleClearLengthRange() {
+    minLength.value = '';
+    maxLength.value = '';
+    customLengthRange = { min: null, max: null };
+    updateLengthRangeDisplay();
+    filterCommits();
+}
+
+function handleApplyLengthRange() {
+    const min = minLength.value ? parseInt(minLength.value) : null;
+    const max = maxLength.value ? parseInt(maxLength.value) : null;
+    
+    customLengthRange = { min, max };
+    updateLengthRangeDisplay();
+    filterCommits();
+}
+
+function validateLengthRange() {
+    const min = minLength.value ? parseInt(minLength.value) : null;
+    const max = maxLength.value ? parseInt(maxLength.value) : null;
+    
+    const isValid = !min || !max || min <= max;
+    const applyBtn = applyLengthRange;
+    
+    applyBtn.disabled = !isValid;
+    
+    if (!isValid) {
+        minLength.style.borderColor = '#da3633';
+        maxLength.style.borderColor = '#da3633';
+    } else {
+        minLength.style.borderColor = '#30363d';
+        maxLength.style.borderColor = '#30363d';
+    }
+}
+
+function updateLengthRangeDisplay() {
+    const lengthOptions = messageLengthFilter.options;
+    const customOption = Array.from(lengthOptions).find(opt => opt.value === 'custom');
+    
+    if (customLengthRange.min !== null || customLengthRange.max !== null) {
+        const minText = customLengthRange.min !== null ? customLengthRange.min : '0';
+        const maxText = customLengthRange.max !== null ? customLengthRange.max : '∞';
+        customOption.textContent = `Custom Range (${minText}-${maxText} chars)`;
+        
+        // Add or update display below the select
+        let display = messageLengthFilter.parentElement.querySelector('.length-range-display');
+        if (!display) {
+            display = document.createElement('div');
+            display.className = 'length-range-display';
+            messageLengthFilter.parentElement.appendChild(display);
+        }
+        display.textContent = `Range: ${minText} - ${maxText} characters`;
+    } else {
+        customOption.textContent = 'Custom Range';
+        const display = messageLengthFilter.parentElement.querySelector('.length-range-display');
+        if (display) {
+            display.remove();
+        }
+    }
 }

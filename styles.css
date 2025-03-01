@@ -689,6 +689,73 @@ button:disabled {
     font-style: italic;
 }
 
+/* Message length filter styling */
+.message-length-container {
+    position: relative;
+    min-width: 150px;
+}
+
+.length-range-picker {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 15px;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    margin-top: 5px;
+    min-width: 280px;
+}
+
+.length-inputs {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.length-input-group {
+    flex: 1;
+}
+
+.length-input-group label {
+    display: block;
+    font-size: 12px;
+    color: #8b949e;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.length-input {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.length-input:focus {
+    outline: none;
+    border-color: #58a6ff;
+}
+
+.length-range-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.length-range-display {
+    font-size: 11px;
+    color: #58a6ff;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
 /* Branch visualization */
 .branch-indicator {
     display: inline-block;
