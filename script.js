@@ -33,6 +33,9 @@ const minLength = document.getElementById('minLength');
 const maxLength = document.getElementById('maxLength');
 const clearLengthRange = document.getElementById('clearLengthRange');
 const applyLengthRange = document.getElementById('applyLengthRange');
+const tagFilter = document.getElementById('tagFilter');
+const tagFilterDropdown = document.getElementById('tagFilterDropdown');
+const tagFilterOptions = document.getElementById('tagFilterOptions');
 const commitsList = document.getElementById('commitsList');
 const commitGraph = document.getElementById('commitGraph');
 const activityHeatmap = document.getElementById('activityHeatmap');
@@ -56,12 +59,14 @@ const branchColorPalette = [
     '#84cc16', '#6366f1', '#22c55e', '#f43f5e', '#a855f7'
 ];
 
-// Global variables for multi-select, date range, file filtering, and message length
+// Global variables for multi-select, date range, file filtering, message length, and tag filtering
 let selectedAuthors = new Set();
 let customDateRange = { start: null, end: null };
 let selectedFilePath = '';
 let allFilePaths = new Set();
 let customLengthRange = { min: null, max: null };
+let selectedTag = '';
+let allTags = new Set();
 
 // Event Listeners
 fileInput.addEventListener('change', handleFileUpload);
@@ -83,6 +88,9 @@ clearLengthRange.addEventListener('click', handleClearLengthRange);
 applyLengthRange.addEventListener('click', handleApplyLengthRange);
 minLength.addEventListener('change', validateLengthRange);
 maxLength.addEventListener('change', validateLengthRange);
+tagFilter.addEventListener('input', handleTagInput);
+tagFilter.addEventListener('focus', showTagDropdown);
+tagFilter.addEventListener('blur', () => setTimeout(hideTagDropdown, 200));
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
@@ -97,6 +105,9 @@ document.addEventListener('click', (e) => {
     }
     if (!e.target.closest('.message-length-container')) {
         closeLengthRangePicker();
+    }
+    if (!e.target.closest('.tag-filter-container')) {
+        hideTagDropdown();
     }
 });
 
@@ -153,13 +164,15 @@ function parseCommits(content) {
             const parts = line.split('|');
             if (parts.length >= 5) {
                 const [hash, author, email, date, message, branches] = parts;
+                const branchData = parseBranchesAndTags(branches || '');
                 currentCommit = {
                     hash: hash.trim(),
                     author: author.trim(),
                     email: email.trim(),
                     date: new Date(date.trim()),
                     message: message.trim(),
-                    branches: parseBranches(branches || ''),
+                    branches: branchData.branches,
+                    tags: branchData.tags,
                     fileStats: {},
                     diff: ''
                 };
@@ -192,12 +205,20 @@ function parseCommits(content) {
         allCommits.push(currentCommit);
     }
 
-    // Collect all file paths
+    // Collect all file paths and tags
     allFilePaths.clear();
+    allTags.clear();
     allCommits.forEach(commit => {
         Object.keys(commit.fileStats).forEach(filePath => {
             allFilePaths.add(filePath);
         });
+        
+        // Extract tags from branch references
+        if (commit.tags && commit.tags.length > 0) {
+            commit.tags.forEach(tag => {
+                allTags.add(tag);
+            });
+        }
     });
 
     assignBranchColors();
@@ -209,17 +230,29 @@ function parseCommits(content) {
     switchView(currentView);
 }
 
-function parseBranches(branchString) {
-    if (!branchString) return ['main'];
+function parseBranchesAndTags(branchString) {
+    if (!branchString) return { branches: ['main'], tags: [] };
+    
+    const branches = [];
+    const tags = [];
+    
+    // Parse tag references (tags usually appear as 'tag: v1.0.0')
+    const tagMatches = branchString.match(/tag:\s*([^,\s)]+)/g);
+    if (tagMatches) {
+        tagMatches.forEach(match => {
+            const tag = match.replace('tag:', '').trim();
+            if (!tags.includes(tag)) {
+                tags.push(tag);
+            }
+        });
+    }
     
     // Parse branch references from git log output
-    const branches = [];
     const branchMatches = branchString.match(/origin\/([^,\s)]+)/g);
-    
     if (branchMatches) {
         branchMatches.forEach(match => {
             const branch = match.replace('origin/', '');
-            if (!branches.includes(branch)) {
+            if (!branches.includes(branch) && !tags.includes(branch)) {
                 branches.push(branch);
             }
         });
@@ -229,13 +262,18 @@ function parseBranches(branchString) {
     const localMatches = branchString.match(/\b([^,\s)]+)\b/g);
     if (localMatches) {
         localMatches.forEach(match => {
-            if (match !== 'HEAD' && match !== 'origin' && !branches.includes(match)) {
+            if (match !== 'HEAD' && match !== 'origin' && match !== 'tag' && 
+                !branches.includes(match) && !tags.includes(match) &&
+                !match.startsWith('v') && !match.includes('.')) {
                 branches.push(match);
             }
         });
     }
     
-    return branches.length > 0 ? branches : ['main'];
+    return { 
+        branches: branches.length > 0 ? branches : ['main'], 
+        tags: tags 
+    };
 }
 
 function assignBranchColors() {
@@ -431,6 +469,15 @@ function filterCommits() {
             }
         }
 
+        // Tag filter
+        if (selectedTag) {
+            const commitTags = commit.tags || [];
+            const matchesTag = commitTags.some(tag => 
+                tag.toLowerCase().includes(selectedTag.toLowerCase())
+            );
+            if (!matchesTag) return false;
+        }
+
         return true;
     });
 
@@ -532,6 +579,10 @@ function displayCommits() {
                         <span class="branch-indicator" style="background: ${branchColor};"></span>
                         ${escapeHtml(commit.message)}
                         <span class="commit-branch">${primaryBranch}</span>
+                        ${commit.tags && commit.tags.length > 0 ? 
+                            commit.tags.map(tag => `<span class="tag-indicator">${escapeHtml(tag)}</span>`).join('')
+                            : ''
+                        }
                     </div>
                     <div class="commit-hash">${commit.hash.substring(0, 7)}</div>
                 </div>
@@ -1290,4 +1341,133 @@ function updateLengthRangeDisplay() {
             display.remove();
         }
     }
+}
+
+// Tag filter handlers
+function handleTagInput() {
+    const query = tagFilter.value.trim();
+    
+    if (query.length > 0) {
+        showTagSuggestions(query);
+    } else {
+        selectedTag = '';
+        hideTagDropdown();
+        filterCommits();
+    }
+}
+
+function showTagDropdown() {
+    if (allTags.size === 0) return;
+    
+    const query = tagFilter.value.trim();
+    if (query.length > 0) {
+        showTagSuggestions(query);
+    } else {
+        showAllTags();
+    }
+}
+
+function hideTagDropdown() {
+    tagFilterDropdown.style.display = 'none';
+    tagFilter.classList.remove('has-results');
+}
+
+function showAllTags() {
+    const allTagsArray = Array.from(allTags).sort();
+    
+    if (allTagsArray.length === 0) {
+        tagFilterOptions.innerHTML = '<div class="no-tag-results">No tags found in repository</div>';
+    } else {
+        // Count commits for each tag
+        const tagCounts = {};
+        allCommits.forEach(commit => {
+            if (commit.tags) {
+                commit.tags.forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                });
+            }
+        });
+        
+        tagFilterOptions.innerHTML = allTagsArray.map(tag => {
+            const count = tagCounts[tag] || 0;
+            
+            return `
+                <div class="tag-option" data-tag="${escapeHtml(tag)}">
+                    <span class="tag-name">${escapeHtml(tag)}</span>
+                    <span class="tag-count">${count}</span>
+                </div>
+            `;
+        }).join('');
+        
+        // Add click handlers
+        tagFilterOptions.querySelectorAll('.tag-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const tag = option.dataset.tag;
+                tagFilter.value = tag;
+                selectedTag = tag;
+                hideTagDropdown();
+                filterCommits();
+            });
+        });
+    }
+    
+    tagFilter.classList.add('has-results');
+    tagFilterDropdown.style.display = 'block';
+}
+
+function showTagSuggestions(query) {
+    const matchingTags = Array.from(allTags).filter(tag =>
+        tag.toLowerCase().includes(query.toLowerCase())
+    ).sort();
+    
+    if (matchingTags.length === 0) {
+        tagFilterOptions.innerHTML = '<div class="no-tag-results">No matching tags found</div>';
+    } else {
+        // Count commits for each tag
+        const tagCounts = {};
+        allCommits.forEach(commit => {
+            if (commit.tags) {
+                commit.tags.forEach(tag => {
+                    if (matchingTags.includes(tag)) {
+                        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                    }
+                });
+            }
+        });
+        
+        tagFilterOptions.innerHTML = matchingTags.map(tag => {
+            const highlightedTag = highlightTagMatch(tag, query);
+            const count = tagCounts[tag] || 0;
+            
+            return `
+                <div class="tag-option" data-tag="${escapeHtml(tag)}">
+                    <span class="tag-name">${highlightedTag}</span>
+                    <span class="tag-count">${count}</span>
+                </div>
+            `;
+        }).join('');
+        
+        // Add click handlers
+        tagFilterOptions.querySelectorAll('.tag-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const tag = option.dataset.tag;
+                tagFilter.value = tag;
+                selectedTag = tag;
+                hideTagDropdown();
+                filterCommits();
+            });
+        });
+    }
+    
+    tagFilter.classList.add('has-results');
+    tagFilterDropdown.style.display = 'block';
+}
+
+function highlightTagMatch(tag, query) {
+    if (!query) return escapeHtml(tag);
+    
+    const escapedTag = escapeHtml(tag);
+    const queryRegex = new RegExp(`(${escapeRegexChars(query)})`, 'gi');
+    
+    return escapedTag.replace(queryRegex, '<span class="tag-match-highlight">$1</span>');
 }

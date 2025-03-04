@@ -756,6 +756,115 @@ button:disabled {
     font-weight: 500;
 }
 
+/* Tag filter styling */
+.tag-filter-container {
+    position: relative;
+    min-width: 200px;
+}
+
+.tag-filter-container input[type="text"] {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.tag-filter-container input[type="text"]:focus {
+    outline: none;
+    border-color: #58a6ff;
+}
+
+.tag-filter-container input[type="text"].has-results {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+}
+
+.tag-filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #0d1117;
+    border: 1px solid #58a6ff;
+    border-top: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tag-filter-options {
+    padding: 0;
+}
+
+.tag-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #c9d1d9;
+    border-bottom: 1px solid #30363d;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tag-option:hover {
+    background: #21262d;
+}
+
+.tag-option:last-child {
+    border-bottom: none;
+}
+
+.tag-name {
+    flex: 1;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    word-break: break-all;
+}
+
+.tag-count {
+    color: #8b949e;
+    font-size: 10px;
+    margin-left: 8px;
+    background: #21262d;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+.tag-match-highlight {
+    background: #ffd33d;
+    color: #000;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+.no-tag-results {
+    padding: 12px;
+    text-align: center;
+    color: #8b949e;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.tag-indicator {
+    display: inline-block;
+    background: #21262d;
+    color: #58a6ff;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    margin-left: 4px;
+    border: 1px solid #30363d;
+}
+
 /* Branch visualization */
 .branch-indicator {
     display: inline-block;
